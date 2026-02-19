@@ -3,34 +3,33 @@
 namespace App\Http\Controllers;
 
 use App\Models\Article;
-use Exception;
+use App\Services\ArticleFilterService;
 use Illuminate\Http\Request;
+use App\Services\ArticleMetaService;
 
 class ArticleController extends Controller
 {
-    public function index(Request $request)
+
+    public function index(Request $request, ArticleFilterService $filterService)
     {
-        try {
-            $query = Article::query()
-                ->userPreferences(
-                    $request->source,
-                    $request->category,
-                    $request->author,
-                    $request->search,
-                    $request->date
-                );
-            
-            return response()->json(
-                $query
-                    ->orderByDesc('published_at')
-                    ->get()
-            );
-        } catch (Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Something Went Wrong! Please try again.',
-                'errors' => $e->getMessage()
-            ]);
-        }
+        $query = Article::query();
+
+        $user = $request->attributes->get('resolved_user');
+
+        $query = $filterService->apply($query, $request, $user);
+
+        $perPage = $request->get('per_page', 10);
+
+        return response()->json(
+            $filterService->paginate($query, $perPage)
+        );
     }
+
+    public function meta(ArticleMetaService $metaService)
+    {
+        return response()->json(
+            $metaService->getFilters()
+        );
+    }
+
 }

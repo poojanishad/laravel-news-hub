@@ -1,38 +1,74 @@
 <?php
+
 namespace App\Services;
 
-use Illuminate\Support\Facades\Log;
+use App\Models\Article;
+use App\Services\NewsProviders\NewsProviderFactory;
 
 class NewsAggregatorService
 {
-    public function __construct(private array $providers) {}
+    protected $factory;
 
-    public function fetchAndStore(): void
+    protected $providers = [
+        'newsapi',
+        'gnews',
+        'newsdata',
+        'guardian',
+    ];
+
+    public function __construct(NewsProviderFactory $factory)
     {
-        foreach ($this->providers as $provider) {
-            try {
-                Log::info('Running provider', [
-                    'provider' => get_class($provider)
-                ]);
+        $this->factory = $factory;
+    }
 
-                $articles = $provider->fetch();
-
-                foreach ($articles as $article) {
-                    \App\Models\Article::updateOrCreate(
-                        ['url' => $article['url']],
-                        $article
-                    );
-                }
-
-            } catch (\Throwable $e) {
-                Log::error('Provider crashed', [
-                    'provider' => get_class($provider),
-                    'error' => $e->getMessage()
-                ]);
-
-                continue;
-            }
+    public function fetchFromAll(): void
+    {
+        foreach ($this->providers as $providerName) {
+            $this->fetchAndStore($providerName);
         }
     }
-}
 
+    public function fetchFromSingle(string $providerName): void
+    {
+        $this->fetchAndStore($providerName);
+    }
+
+    protected function fetchAndStore(string $providerName): void
+    {
+        $provider = $this->factory->make($providerName);
+
+        $articles = $provider->fetch();
+
+        if (!is_array($articles)) {
+            throw new \Exception("Provider {$providerName} did not return valid array.");
+        }
+
+        foreach ($articles as $article) {
+
+            if (!isset($article['url'])) {
+                continue;
+            }
+
+            Article::updateOrCreate(
+                ['url' => $article['url']],
+                $article
+            );
+        }
+    }
+
+    public function paginate($query, $perPage = 10)
+    {
+        $paginator = $query->latest()->paginate($perPage);
+
+        return [
+            'data' => $paginator->items(),
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+            ]
+        ];
+    }
+
+}

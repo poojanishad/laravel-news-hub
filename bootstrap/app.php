@@ -1,12 +1,13 @@
 <?php
 
+use App\Http\Middleware\ResolveUser;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Auth\AuthenticationException;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -16,13 +17,25 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+
+    ->withCommands([
+        \App\Console\Commands\FetchArticlesCommand::class,
+    ])
+
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->append(
+
+    $middleware->append(
         \Illuminate\Http\Middleware\HandleCors::class
     );
-    })
+
+    $middleware->alias([
+        'resolve.user' => \App\Http\Middleware\ResolveUser::class,
+    ]);
+
+})
+
     ->withExceptions(function (Exceptions $exceptions): void {
-        
+
         $exceptions->render(function (ValidationException $e, $request) {
             if ($request->expectsJson()) {
                 return response()->json([
@@ -68,7 +81,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 ], $e->getStatusCode());
             }
         });
-        
+
         $exceptions->render(function (Throwable $e, $request) {
             if ($request->expectsJson()) {
                 return response()->json([
@@ -78,9 +91,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 ], 500);
             }
         });
-        
 
-        
-    })->create();
+    })
 
-
+    ->create();
