@@ -4,7 +4,6 @@ namespace App\Services\NewsProviders;
 
 use App\Contracts\NewsProviderInterface;
 use Illuminate\Support\Facades\Http;
-use RuntimeException;
 
 abstract class BaseNewsProvider implements NewsProviderInterface
 {
@@ -15,7 +14,7 @@ abstract class BaseNewsProvider implements NewsProviderInterface
             ->get($url, $params);
 
         if ($response->failed()) {
-            throw new RuntimeException(
+            throw new \RuntimeException(
                 static::class . ' failed with status ' . $response->status()
             );
         }
