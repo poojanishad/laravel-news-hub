@@ -33,12 +33,12 @@ class FetchArticlesCommand extends Command
         return self::SUCCESS;
     }
 
-    public function handle(): int
+    public function handle(NewsProviderFactory $factory): int
     {
         $providerOption = $this->option('provider');
 
         try {
-            $providers = NewsProviderFactory::make($providerOption);
+            $providers = $factory->make($providerOption);
 
             $service = new NewsAggregatorService($providers);
             $service->fetchAndStore();

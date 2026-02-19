@@ -52,8 +52,9 @@ return [
         'endpoint' => 'https://newsdata.io/api/1/latest',
     ],
 
-    'guardiankey' => [
-        'key'     => env('GUARDIAN_API_KEY'),
+    'guardian' => [
+        'endpoint' => 'https://content.guardianapis.com/search',
+        'key'      => env('GUARDIAN_API_KEY'),
     ],
 
     'general'  => [

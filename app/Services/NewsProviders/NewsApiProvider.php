@@ -2,45 +2,41 @@
 
 namespace App\Services\NewsProviders;
 
-use App\Contracts\NewsProviderInterface;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
-class NewsApiProvider implements NewsProviderInterface
+class NewsApiProvider extends BaseNewsProvider
 {
+    public function name(): string
+    {
+        return 'newsapi';
+    }
+
     public function fetch(): array
     {
-        Log::info('Fetching from NewsApiProvider');
+        Log::info('Fetching articles', ['provider' => $this->name()]);
 
-        $response = Http::timeout(10)
-            ->retry(3, 200)
-            ->get(config('services.newsapi.endpoint'), [
-                'q'        => config('services.newsapi.query', 'news'),
-                'language' => config('services.general.language'),
-                'pageSize' => config('services.general.pageSize'),
-                'apiKey'  => config('services.newsapi.key'),
-            ]);
-
-        if ($response->failed()) {
-            Log::error('NewsApiProvider failed', [
-                'status' => $response->status(),
-                'body'   => $response->body(),
-            ]);
-
-            return [];
+        if (!config('services.newsapi.endpoint')) {
+            throw new \RuntimeException('NewsAPI endpoint missing in config/services.php');
         }
 
-        $articles = collect($response->json('articles', []))
-            ->filter(fn ($a) => !empty($a['url']))
-            ->map(fn ($a) => $this->transform($a))
+        $data = $this->get(config('services.newsapi.endpoint'), [
+            'q'        => config('services.newsapi.query', 'news'),
+            'language' => config('services.general.language'),
+            'pageSize' => config('services.general.pageSize', 20),
+            'apiKey'   => config('services.newsapi.key'),
+        ]);
+
+        $articles = collect($data['articles'] ?? [])
+            ->filter(fn ($article) => !empty($article['url']))
+            ->map(fn ($article) => $this->transform($article))
             ->unique('url')
             ->values()
             ->toArray();
 
-        Log::info('NewsApiProvider fetched articles', [
-            'count' => count($articles),
+        Log::info('Articles fetched', [
+            'provider' => $this->name(),
+            'count'    => count($articles),
         ]);
 
         return $articles;
@@ -49,32 +45,21 @@ class NewsApiProvider implements NewsProviderInterface
     protected function transform(array $article): array
     {
         return [
-            'title' => $article['title']
-                ?? 'Untitled Article',
-
-            'description' => $article['description']
-                ?? Str::limit(strip_tags($article['content'] ?? ''), 150),
-
-            'content' => $article['content']
+            'title'        => $article['title'] ?? 'Untitled Article',
+            'description'  => $article['description']
+                ?? str(strip_tags($article['content'] ?? ''))->limit(150)->toString(),
+            'content'      => $article['content']
                 ?? $article['description']
                 ?? null,
-
-            'author' => $article['author']
+            'author'       => $article['author']
                 ?? ($article['source']['name'] ?? 'Unknown'),
-
-            'source' => 'NewsAPI',
-
-            'category' => config('services.newsapi.category'),
-
-            'url' => $article['url'],
-
-            'image_url' => $article['urlToImage']
-                ?? null,
-
+            'source'       => $this->name(),
+            'category'     => config('services.newsapi.category'),
+            'url'          => $article['url'],
+            'image_url'    => $article['urlToImage'] ?? null,
             'published_at' => isset($article['publishedAt'])
                 ? Carbon::parse($article['publishedAt'])->toDateTimeString()
                 : now()->toDateTimeString(),
         ];
     }
 }
-

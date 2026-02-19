@@ -3,23 +3,20 @@
 namespace App\Services\NewsProviders;
 
 use InvalidArgumentException;
-
 class NewsProviderFactory
 {
-    public static function make(string $provider): array
+    public function __construct(private array $providers) {}
+
+    public function make(string $provider): array
     {
-        return match ($provider) {
-            'newsapi' => [new NewsApiProvider()],
-            'gnews' => [new GNewsProvider()],
-            'newsdata' => [new NewsDataProvider()],
-            'thegaurdian' => [new TheGuardianProvider()],
-            'all' => [
-                new NewsApiProvider(),
-                new GNewsProvider(),
-                new NewsDataProvider(),
-                new TheGuardianProvider(),
-            ],
-            default => throw new InvalidArgumentException("Invalid provider: {$provider}")
-        };
+        if ($provider === 'all') {
+            return array_values($this->providers);
+        }
+
+        if (! isset($this->providers[$provider])) {
+            throw new InvalidArgumentException("Invalid provider: {$provider}");
+        }
+
+        return [$this->providers[$provider]];
     }
 }

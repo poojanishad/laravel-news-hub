@@ -10,4 +10,5 @@ interface NewsProviderInterface
      * @return array
      */
     public function fetch(): array;
+    public function name(): string;
 }

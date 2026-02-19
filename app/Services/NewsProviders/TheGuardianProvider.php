@@ -2,59 +2,66 @@
 
 namespace App\Services\NewsProviders;
 
-use App\Contracts\NewsProviderInterface;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
-class TheGuardianProvider implements NewsProviderInterface
+class TheGuardianProvider extends BaseNewsProvider
 {
+    public function name(): string
+    {
+        return 'guardian';
+    }
+
     public function fetch(): array
     {
-        Log::info('Fetching from The Guardian');
-        $response = Http::get('https://content.guardianapis.com/search', [
-            'from-date'   => '2026-01-01',
-            'page-size'   =>  config('services.general.pageSize'),
-            'show-fields' => 'thumbnail,bodyText',
-            'show-tags'   => 'contributor',
-            'api-key'     => config('services.guardiankey.key'),
-        ]);
+        Log::info('Fetching articles', ['provider' => $this->name()]);
 
-        if ($response->failed()) {
-            Log::error('TheGuardianProvider request failed', [
-                'status' => $response->status(),
-                'body'   => $response->body(),
-            ]);
-
-            return [];
+        if (!config('services.guardian.endpoint')) {
+            throw new \RuntimeException('The Guardian endpoint missing in config/services.php');
         }
 
-        $articles = collect($response->json('response.results', []))
-            ->map(fn($a) => [
-                'title'        => $a['webTitle'] ?? null,
-                'description' => Str::limit(
-                    strip_tags(
-                        data_get($a, 'fields.bodyText')
-                        ?? data_get($a, 'webTitle')
-                        ?? ''
-                    ),
-                    150
-                ),
-                'content'      => $a['fields']['bodyText'] ?? null,
-                'author'       => $a['tags'][0]['webTitle'] ?? null,
-                'source'       => 'TheGuardian',
-                'category'     => $a['pillarName'] ?? null,
-                'url'          => $a['webUrl'] ?? null,
-                'image_url'    => $a['fields']['thumbnail'] ?? null,
-                'published_at' => $a['webPublicationDate'] ?? null,
-            ])
-            ->filter(fn($a) => ! empty($a['url']))
+        $data = $this->get(config('services.guardian.endpoint'), [
+            'from-date'   => config('services.guardian.from_date', '2024-01-01'),
+            'page-size'   => config('services.general.pageSize'),
+            'show-fields' => 'thumbnail,bodyText',
+            'show-tags'   => 'contributor',
+            'api-key'     => config('services.guardian.key'),
+        ]);
+
+        $articles = collect($data['response']['results'] ?? [])
+            ->filter(fn ($article) => !empty($article['webUrl']))
+            ->map(fn ($article) => $this->transform($article))
+            ->unique('url')
             ->values()
             ->toArray();
 
-        Log::info('TheGuardianProvider fetched articles', [
-            'count' => count($articles),
+        Log::info('Articles fetched', [
+            'provider' => $this->name(),
+            'count'    => count($articles),
         ]);
+
         return $articles;
+    }
+
+    protected function transform(array $article): array
+    {
+        return [
+            'title'        => $article['webTitle'] ?? 'Untitled Article',
+            'description'  => Str::limit(
+                strip_tags(data_get($article, 'fields.bodyText') ?? ''),
+                150
+            ),
+            'content'      => data_get($article, 'fields.bodyText'),
+            'author'       => collect($article['tags'] ?? [])
+                ->firstWhere('type', 'contributor')['webTitle'] ?? 'Unknown',
+            'source'       => $this->name(),
+            'category'     => $article['pillarName'] ?? null,
+            'url'          => $article['webUrl'],
+            'image_url'    => data_get($article, 'fields.thumbnail'),
+            'published_at' => isset($article['webPublicationDate'])
+                ? Carbon::parse($article['webPublicationDate'])->toDateTimeString()
+                : now()->toDateTimeString(),
+        ];
     }
 }

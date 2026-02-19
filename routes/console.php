@@ -8,8 +8,6 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
- Schedule::command('news:fetch')->hourly();
-
-## Schedule::command('news:fetch')
- ####   ->everyMinute()
-  ##  ->withoutOverlapping();
+Schedule::command('news:fetch --provider=all')
+    ->hourly()
+    ->withoutOverlapping();

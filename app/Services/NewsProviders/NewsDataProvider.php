@@ -2,43 +2,39 @@
 
 namespace App\Services\NewsProviders;
 
-use App\Contracts\NewsProviderInterface;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
-class NewsDataProvider implements NewsProviderInterface
+class NewsDataProvider extends BaseNewsProvider
 {
+    public function name(): string
+    {
+        return 'newsdata';
+    }
+
     public function fetch(): array
     {
-        Log::info('Fetching from NewsDataProvider');
+        Log::info('Fetching articles', ['provider' => $this->name()]);
 
-        $response = Http::timeout(10)
-            ->retry(3, 200)
-            ->get(config('services.newsdata.endpoint'), [
-                'apikey'  => config('services.newsdata.key'),
-                'language'=> config('services.general.language'),
-            ]);
-
-        if ($response->failed()) {
-            Log::error('NewsDataProvider failed', [
-                'status' => $response->status(),
-                'body'   => $response->body(),
-            ]);
-
-            return [];
+        if (!config('services.newsdata.endpoint')) {
+            throw new \RuntimeException('NewsData endpoint missing in config/services.php');
         }
 
-        $articles = collect($response->json('results', []))
-            ->filter(fn ($a) => !empty($a['link']))
-            ->map(fn ($a) => $this->transform($a))
+        $data = $this->get(config('services.newsdata.endpoint'), [
+            'apikey'  => config('services.newsdata.key'),
+            'language'=> config('services.general.language'),
+        ]);
+
+        $articles = collect($data['results'] ?? [])
+            ->filter(fn ($article) => !empty($article['link']))
+            ->map(fn ($article) => $this->transform($article))
             ->unique('url')
             ->values()
             ->toArray();
 
-        Log::info('NewsDataProvider fetched articles', [
-            'count' => count($articles),
+        Log::info('Articles fetched', [
+            'provider' => $this->name(),
+            'count'    => count($articles),
         ]);
 
         return $articles;
@@ -47,15 +43,18 @@ class NewsDataProvider implements NewsProviderInterface
     protected function transform(array $article): array
     {
         return [
-            'title'       => $article['title'] ?? 'Untitled Article',
-            'description' => $article['description'] ?? Str::limit(strip_tags($article['content'] ?? ''), 150),
-            'content'     => $article['content'] ?? null,
-            'author'      => $article['creator'][0] ?? null,
-            'source'      => 'NewsData',
-            'category'    => $article['category'][0] ?? null,
-            'url'         => $article['link'],
-            'image_url'   => $article['image_url'] ?? null,
-            'published_at' => isset($article['pubDate']) ? Carbon::parse($article['pubDate'])->toDateTimeString() : now()->toDateTimeString(),
+            'title'        => $article['title'] ?? 'Untitled Article',
+            'description'  => $article['description']
+                ?? str(strip_tags($article['content'] ?? ''))->limit(150)->toString(),
+            'content'      => $article['content'] ?? null,
+            'author'       => $article['creator'][0] ?? 'Unknown',
+            'source'       => $this->name(),
+            'category'     => $article['category'][0] ?? null,
+            'url'          => $article['link'],
+            'image_url'    => $article['image_url'] ?? null,
+            'published_at' => isset($article['pubDate'])
+                ? Carbon::parse($article['pubDate'])->toDateTimeString()
+                : now()->toDateTimeString(),
         ];
     }
 }
