@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class ArticleFilterService
 {
@@ -40,8 +41,22 @@ class ArticleFilterService
                 )
             )
             ->when(
-                $request->filled('date'),
-                fn ($q) => $q->whereDate('published_at', $request->date)
+                $request->filled('selected_date'),
+                function ($q) use ($request) {
+
+                    $localStart = Carbon::parse($request->selected_date, 'Asia/Kolkata')
+                        ->startOfDay();
+
+                    $localEnd = Carbon::parse($request->selected_date, 'Asia/Kolkata')
+                        ->endOfDay();
+
+                    $utcStart = $localStart->clone()->timezone('UTC');
+                    $utcEnd   = $localEnd->clone()->timezone('UTC');
+
+                    $q->whereBetween('published_at', [$utcStart, $utcEnd]);
+                }
             );
+
+            
     }
 }
