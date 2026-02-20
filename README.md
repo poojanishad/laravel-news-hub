@@ -110,6 +110,10 @@ php artisan schedule:work
 ```
 
 For deploy in live configure a cron job:
+Run crontab -e
+
+Enter your desired cron schuled time
+* * * * * cd /var/www/your-project && php artisan schedule:run >> /dev/null 2>&1
 
 ```bash
 * * * * * php /path-to-project/artisan schedule:run >> /dev/null 2>&1
