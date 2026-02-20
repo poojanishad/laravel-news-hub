@@ -3,15 +3,16 @@
 use App\Http\Controllers\UserPreferenceController;
 use App\Http\Controllers\ArticleController;
 use Illuminate\Support\Facades\Route;
+use App\Support\ApiRoutes;
+use App\Support\Middleware;
 
-Route::middleware(['resolve.user'])->group(function () {
+Route::middleware([Middleware::RESOLVE_USER])->group(function () {
+    Route::post(ApiRoutes::PREFERENCES, [UserPreferenceController::class, 'store']);
+    Route::get(ApiRoutes::PREFERENCES, [UserPreferenceController::class, 'show']);
+    Route::delete(ApiRoutes::PREFERENCES, [UserPreferenceController::class, 'destroy']);
 
-    Route::post('/preferences', [UserPreferenceController::class, 'store']);
-    Route::get('/preferences', [UserPreferenceController::class, 'show']);
-    Route::delete('/preferences', [UserPreferenceController::class, 'destroy']);
-
-    Route::get('/articles', [ArticleController::class, 'index']);
-    Route::get('/articles/meta', [ArticleController::class, 'meta']);
+    Route::get(ApiRoutes::ARTICLES, [ArticleController::class, 'index']);
+    Route::get(ApiRoutes::ARTICLES_META, [ArticleController::class, 'meta']);
 });
 
 

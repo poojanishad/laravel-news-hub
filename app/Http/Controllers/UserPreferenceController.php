@@ -6,12 +6,21 @@ use App\Models\UserPreference;
 use App\Services\PreferenceService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use OpenApi\Attributes as OA;
 
 class UserPreferenceController extends Controller
 {
-    /**
-     * Store or Update Preference
-     */
+    #[OA\Post(
+        path: "/api/preferences",
+        summary: "Store user preferences",
+        tags: ["Preferences"],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Preferences saved"
+            )
+        ]
+    )]
     public function store(Request $request, PreferenceService $service): JsonResponse
     {
         $user = $request->attributes->get('resolved_user');
