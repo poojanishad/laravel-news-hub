@@ -14,29 +14,12 @@ return new class extends Migration
         Schema::create('user_preferences', function (Blueprint $table) {
             $table->id();
 
-            // One preference row per user
             $table->uuid('user_id')->unique();
-
-            /*
-            |--------------------------------------------------------------------------
-            | Multiple Preferences (JSON Arrays)
-            |--------------------------------------------------------------------------
-            | Example:
-            | sources: ["guardian", "newsapi"]
-            | categories: ["technology", "business"]
-            | authors: ["John Doe"]
-            */
             $table->json('sources')->nullable();
             $table->json('categories')->nullable();
             $table->json('authors')->nullable();
-
             $table->timestamps();
-
-            /*
-            |--------------------------------------------------------------------------
-            | Foreign Key
-            |--------------------------------------------------------------------------
-            */
+            
             $table->foreign('user_id')
                   ->references('id')
                   ->on('users')

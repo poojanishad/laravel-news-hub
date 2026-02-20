@@ -17,11 +17,11 @@ class UserPreferenceController extends Controller
     #[OA\Post(
         path: "/api/preferences",
         summary: "Store user preferences",
-        description: "Saves or updates user news preferences (sources, categories, authors).",
         tags: ["Preferences"],
         requestBody: new OA\RequestBody(
             required: true,
             content: new OA\JsonContent(
+                type: "object",
                 properties: [
                     new OA\Property(
                         property: "sources",
@@ -47,7 +47,38 @@ class UserPreferenceController extends Controller
         responses: [
             new OA\Response(
                 response: 200,
-                description: "Preferences saved successfully"
+                description: "Preferences saved successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Preference saved successfully"),
+                        new OA\Property(
+                            property: "data",
+                            type: "object",
+                            properties: [
+                                new OA\Property(property: "user_id", type: "integer", example: 1),
+                                new OA\Property(
+                                    property: "sources",
+                                    type: "array",
+                                    items: new OA\Items(type: "string")
+                                ),
+                                new OA\Property(
+                                    property: "categories",
+                                    type: "array",
+                                    items: new OA\Items(type: "string")
+                                ),
+                                new OA\Property(
+                                    property: "authors",
+                                    type: "array",
+                                    items: new OA\Items(type: "string")
+                                ),
+                            ]
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 422,
+                description: "Validation error"
             ),
             new OA\Response(
                 response: 401,
@@ -77,12 +108,16 @@ class UserPreferenceController extends Controller
     #[OA\Delete(
         path: "/api/preferences",
         summary: "Clear user preferences",
-        description: "Removes all saved preferences for the authenticated user.",
         tags: ["Preferences"],
         responses: [
             new OA\Response(
                 response: 200,
-                description: "Preferences cleared successfully"
+                description: "Preferences cleared successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: "message", type: "string", example: "Preference cleared successfully")
+                    ]
+                )
             ),
             new OA\Response(
                 response: 401,
@@ -104,12 +139,38 @@ class UserPreferenceController extends Controller
     #[OA\Get(
         path: "/api/preferences",
         summary: "Get user preferences",
-        description: "Returns saved preferences for the authenticated user.",
         tags: ["Preferences"],
         responses: [
             new OA\Response(
                 response: 200,
-                description: "Preference retrieved successfully"
+                description: "Preference retrieved successfully",
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: "data",
+                            type: "object",
+                            nullable: true,
+                            properties: [
+                                new OA\Property(property: "user_id", type: "integer", example: 1),
+                                new OA\Property(
+                                    property: "sources",
+                                    type: "array",
+                                    items: new OA\Items(type: "string")
+                                ),
+                                new OA\Property(
+                                    property: "categories",
+                                    type: "array",
+                                    items: new OA\Items(type: "string")
+                                ),
+                                new OA\Property(
+                                    property: "authors",
+                                    type: "array",
+                                    items: new OA\Items(type: "string")
+                                ),
+                            ]
+                        )
+                    ]
+                )
             ),
             new OA\Response(
                 response: 401,

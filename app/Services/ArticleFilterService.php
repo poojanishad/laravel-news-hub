@@ -2,54 +2,46 @@
 
 namespace App\Services;
 
-use App\Models\UserPreference;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Request;
 
 class ArticleFilterService
 {
-    public function apply(Builder $query, $request, $user): Builder
+    public function apply(Builder $query, Request $request, $user = null): Builder
     {
-        $query
-            ->when($request->search, function ($q) use ($request) {
-                $q->where(function ($sub) use ($request) {
+        return $query
+
+            ->when(
+                $request->filled('search'),
+                fn ($q) => $q->where(function ($sub) use ($request) {
                     $sub->where('title', 'like', "%{$request->search}%")
                         ->orWhere('description', 'like', "%{$request->search}%");
-                });
-            })
-            ->when($request->source, fn($q) =>
-                $q->whereIn('source', explode(',', $request->source))
+                })
             )
-            ->when($request->category, fn($q) =>
-                $q->whereIn('category', explode(',', $request->category))
+            ->when(
+                $request->filled('sources'),
+                fn ($q) => $q->whereIn(
+                    'source',
+                    array_filter(explode(',', $request->sources))
+                )
             )
-            ->when($request->author, fn($q) =>
-                $q->whereIn('author', explode(',', $request->author))
+            ->when(
+                $request->filled('categories'),
+                fn ($q) => $q->whereIn(
+                    'category',
+                    array_filter(explode(',', $request->categories))
+                )
             )
-            ->when($request->date, fn($q) =>
-                $q->whereDate('published_at', $request->date)
+            ->when(
+                $request->filled('authors'),
+                fn ($q) => $q->whereIn(
+                    'author',
+                    array_filter(explode(',', $request->authors))
+                )
+            )
+            ->when(
+                $request->filled('date'),
+                fn ($q) => $q->whereDate('published_at', $request->date)
             );
-
-        // Apply user preferences if requested
-        if ($request->boolean('preferences')) {
-
-            $pref = UserPreference::where('user_id', $user->id)->first();
-
-            if ($pref) {
-
-                if (!empty($pref->sources)) {
-                    $query->whereIn('source', $pref->sources);
-                }
-
-                if (!empty($pref->categories)) {
-                    $query->whereIn('category', $pref->categories);
-                }
-
-                if (!empty($pref->authors)) {
-                    $query->whereIn('author', $pref->authors);
-                }
-            }
-        }
-
-        return $query;
     }
 }
