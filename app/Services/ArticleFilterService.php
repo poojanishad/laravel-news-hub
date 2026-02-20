@@ -2,79 +2,46 @@
 
 namespace App\Services;
 
-use App\Services\PreferenceService;
-
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Request;
 
 class ArticleFilterService
 {
-    protected $preferenceService;
-
-    public function __construct(PreferenceService $preferenceService)
-    {
-        $this->preferenceService = $preferenceService;
-    }
-
-    public function apply($query, $request, $user)
-    {
-        $manualFilterUsed =
-            $request->filled('search') ||
-            $request->filled('source') ||
-            $request->filled('category') ||
-            $request->filled('date') ||
-            $request->filled('author');
-
-        if (!$manualFilterUsed && $user) {
-
-            $pref = $this->preferenceService->getUserPreference($user);
-
-            if ($pref) {
-
-                if (!empty($pref->sources)) {
-                    $query->whereIn('source', $pref->sources);
-                }
-
-                if (!empty($pref->categories)) {
-                    $query->whereIn('category', $pref->categories);
-                }
-
-                if (!empty($pref->authors)) {
-                    $query->whereIn('author', $pref->authors);
-                }
-            }
-        }
-
-        if ($request->filled('search')) {
-            $query->where('title', 'like', '%' . $request->search . '%');
-        }
-
-        if ($request->filled('source')) {
-            $query->where('source', $request->source);
-        }
-
-        if ($request->filled('category')) {
-            $query->where('category', $request->category);
-        }
-
-        if ($request->filled('author')) {
-            $query->where('author', $request->author);
-        }
-
-        if ($request->filled('date')) {
-            $start = $request->date . ' 00:00:00';
-            $end   = $request->date . ' 23:59:59';
-
-            $query->whereBetween('published_at', [$start, $end]);
-        }
-
-        return $query;
-    }
-
-
-    public function paginate($query, $perPage = 10)
+    public function apply(Builder $query, Request $request, $user = null): Builder
     {
         return $query
-            ->orderBy('published_at', 'desc')
-            ->paginate($perPage);
-    }
 
+            ->when(
+                $request->filled('search'),
+                fn ($q) => $q->where(function ($sub) use ($request) {
+                    $sub->where('title', 'like', "%{$request->search}%")
+                        ->orWhere('description', 'like', "%{$request->search}%");
+                })
+            )
+            ->when(
+                $request->filled('sources'),
+                fn ($q) => $q->whereIn(
+                    'source',
+                    array_filter(explode(',', $request->sources))
+                )
+            )
+            ->when(
+                $request->filled('categories'),
+                fn ($q) => $q->whereIn(
+                    'category',
+                    array_filter(explode(',', $request->categories))
+                )
+            )
+            ->when(
+                $request->filled('authors'),
+                fn ($q) => $q->whereIn(
+                    'author',
+                    array_filter(explode(',', $request->authors))
+                )
+            )
+            ->when(
+                $request->filled('date'),
+                fn ($q) => $q->whereDate('published_at', $request->date)
+            );
+    }
 }

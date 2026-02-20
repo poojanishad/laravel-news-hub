@@ -52,15 +52,92 @@
             }
         },
         "/api/preferences": {
+            "get": {
+                "tags": [
+                    "Preferences"
+                ],
+                "summary": "Get user preferences",
+                "description": "Returns saved preferences for the authenticated user.",
+                "operationId": "110d923e543e89f784b93e143ae4825a",
+                "responses": {
+                    "200": {
+                        "description": "Preference retrieved successfully"
+                    },
+                    "401": {
+                        "description": "User not resolved"
+                    }
+                }
+            },
             "post": {
                 "tags": [
                     "Preferences"
                 ],
                 "summary": "Store user preferences",
+                "description": "Saves or updates user news preferences (sources, categories, authors).",
                 "operationId": "e524a1863fe3fc97946c79487476ad18",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "sources": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "example": [
+                                            "guardian",
+                                            "newsapi"
+                                        ]
+                                    },
+                                    "categories": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "example": [
+                                            "technology",
+                                            "business"
+                                        ]
+                                    },
+                                    "authors": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "example": [
+                                            "John Doe"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
                 "responses": {
                     "200": {
-                        "description": "Preferences saved"
+                        "description": "Preferences saved successfully"
+                    },
+                    "401": {
+                        "description": "User not resolved"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Preferences"
+                ],
+                "summary": "Clear user preferences",
+                "description": "Removes all saved preferences for the authenticated user.",
+                "operationId": "9076b84ae7f6047e4f4698e5ef385e10",
+                "responses": {
+                    "200": {
+                        "description": "Preferences cleared successfully"
+                    },
+                    "401": {
+                        "description": "User not resolved"
                     }
                 }
             }

@@ -6,17 +6,20 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         Schema::create('user_preferences', function (Blueprint $table) {
             $table->id();
-            $table->uuid('user_id');
+
+            $table->uuid('user_id')->unique();
             $table->json('sources')->nullable();
             $table->json('categories')->nullable();
             $table->json('authors')->nullable();
             $table->timestamps();
-
+            
             $table->foreign('user_id')
                   ->references('id')
                   ->on('users')
@@ -24,6 +27,9 @@ return new class extends Migration
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::dropIfExists('user_preferences');
