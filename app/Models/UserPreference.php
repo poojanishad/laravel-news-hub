@@ -14,8 +14,13 @@ class UserPreference extends Model
     ];
 
     protected $casts = [
-    'sources' => 'array',
-    'categories' => 'array',
-    'authors' => 'array',
-];
+        'sources' => 'array',
+        'categories' => 'array',
+        'authors' => 'array',
+    ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

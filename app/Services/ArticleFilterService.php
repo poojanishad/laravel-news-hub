@@ -2,30 +2,37 @@
 
 namespace App\Services;
 
-use App\Services\PreferenceService;
-
+use App\Models\UserPreference;
+use Illuminate\Database\Eloquent\Builder;
 
 class ArticleFilterService
 {
-    protected $preferenceService;
-
-    public function __construct(PreferenceService $preferenceService)
+    public function apply(Builder $query, $request, $user): Builder
     {
-        $this->preferenceService = $preferenceService;
-    }
+        $query
+            ->when($request->search, function ($q) use ($request) {
+                $q->where(function ($sub) use ($request) {
+                    $sub->where('title', 'like', "%{$request->search}%")
+                        ->orWhere('description', 'like', "%{$request->search}%");
+                });
+            })
+            ->when($request->source, fn($q) =>
+                $q->whereIn('source', explode(',', $request->source))
+            )
+            ->when($request->category, fn($q) =>
+                $q->whereIn('category', explode(',', $request->category))
+            )
+            ->when($request->author, fn($q) =>
+                $q->whereIn('author', explode(',', $request->author))
+            )
+            ->when($request->date, fn($q) =>
+                $q->whereDate('published_at', $request->date)
+            );
 
-    public function apply($query, $request, $user)
-    {
-        $manualFilterUsed =
-            $request->filled('search') ||
-            $request->filled('source') ||
-            $request->filled('category') ||
-            $request->filled('date') ||
-            $request->filled('author');
+        // Apply user preferences if requested
+        if ($request->boolean('preferences')) {
 
-        if (!$manualFilterUsed && $user) {
-
-            $pref = $this->preferenceService->getUserPreference($user);
+            $pref = UserPreference::where('user_id', $user->id)->first();
 
             if ($pref) {
 
@@ -43,38 +50,6 @@ class ArticleFilterService
             }
         }
 
-        if ($request->filled('search')) {
-            $query->where('title', 'like', '%' . $request->search . '%');
-        }
-
-        if ($request->filled('source')) {
-            $query->where('source', $request->source);
-        }
-
-        if ($request->filled('category')) {
-            $query->where('category', $request->category);
-        }
-
-        if ($request->filled('author')) {
-            $query->where('author', $request->author);
-        }
-
-        if ($request->filled('date')) {
-            $start = $request->date . ' 00:00:00';
-            $end   = $request->date . ' 23:59:59';
-
-            $query->whereBetween('published_at', [$start, $end]);
-        }
-
         return $query;
     }
-
-
-    public function paginate($query, $perPage = 10)
-    {
-        return $query
-            ->orderBy('published_at', 'desc')
-            ->paginate($perPage);
-    }
-
 }

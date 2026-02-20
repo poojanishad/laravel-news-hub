@@ -19,10 +19,17 @@ return new class extends Migration
             $table->string('author')->nullable();
             $table->string('source');
             $table->string('category')->nullable();
-            $table->text('url')->unique();
+            $table->string('url', 191)->unique();
             $table->text('image_url')->nullable();
             $table->timestamp('published_at')->nullable();
             $table->timestamps();
+
+            $table->index('source');
+            $table->index('category');
+            $table->index('author');
+            $table->index('published_at');
+
+            $table->index(['source', 'category', 'published_at']);
         });
     }
 

@@ -31,13 +31,16 @@ class ArticleController extends Controller
     )]
     public function index(Request $request, ArticleFilterService $filterService)
     {
-        $query = Article::query();
         $user = $request->attributes->get('resolved_user');
+
+        $query = Article::query();
+
         $query = $filterService->apply($query, $request, $user);
+
         $perPage = $request->get('per_page', 10);
 
         return response()->json(
-            $filterService->paginate($query, $perPage)
+            $query->latest('published_at')->paginate($perPage)
         );
     }
 

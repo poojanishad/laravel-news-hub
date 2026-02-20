@@ -6,13 +6,16 @@ use App\Models\UserPreference;
 
 class PreferenceService
 {
-    public function getUserPreference($user)
+    public function get($user)
     {
-        if (!$user) {
-            return null;
-        }
-
-        return UserPreference::where('user_id', $user->id)->first();
+        return UserPreference::firstOrCreate(
+            ['user_id' => $user->id],
+            [
+                'sources' => [],
+                'categories' => [],
+                'authors' => [],
+            ]
+        );
     }
 
     public function save($user, array $data)

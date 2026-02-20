@@ -10,6 +10,10 @@ use OpenApi\Attributes as OA;
 
 class UserPreferenceController extends Controller
 {
+    public function __construct(
+        private PreferenceService $service
+    ) {}
+
     #[OA\Post(
         path: "/api/preferences",
         summary: "Store user preferences",
@@ -51,15 +55,9 @@ class UserPreferenceController extends Controller
             )
         ]
     )]
-    public function store(Request $request, PreferenceService $service): JsonResponse
+    public function store(Request $request): JsonResponse
     {
         $user = $request->attributes->get('resolved_user');
-
-        if (!$user) {
-            return response()->json([
-                'message' => 'User not resolved'
-            ], 401);
-        }
 
         $validated = $request->validate([
             'sources' => ['nullable', 'array'],
@@ -67,17 +65,14 @@ class UserPreferenceController extends Controller
             'authors' => ['nullable', 'array'],
         ]);
 
-        $preference = $service->save($user, [
-            'sources' => $validated['sources'] ?? [],
-            'categories' => $validated['categories'] ?? [],
-            'authors' => $validated['authors'] ?? [],
-        ]);
+        $preference = $this->service->save($user, $validated);
 
         return response()->json([
             'message' => 'Preference saved successfully',
             'data' => $preference
         ]);
     }
+
 
     #[OA\Delete(
         path: "/api/preferences",
@@ -95,17 +90,11 @@ class UserPreferenceController extends Controller
             )
         ]
     )]
-    public function destroy(Request $request, PreferenceService $service): JsonResponse
+    public function destroy(Request $request): JsonResponse
     {
         $user = $request->attributes->get('resolved_user');
 
-        if (!$user) {
-            return response()->json([
-                'message' => 'User not resolved'
-            ], 401);
-        }
-
-        $service->clear($user);
+        $this->service->clear($user);
 
         return response()->json([
             'message' => 'Preference cleared successfully'
@@ -132,16 +121,8 @@ class UserPreferenceController extends Controller
     {
         $user = $request->attributes->get('resolved_user');
 
-        if (!$user) {
-            return response()->json([
-                'message' => 'User not resolved'
-            ], 401);
-        }
-
-        $preference = UserPreference::where('user_id', $user->id)->first();
-
         return response()->json([
-            'data' => $preference
+            'data' => $this->service->get($user)
         ]);
     }
 }
