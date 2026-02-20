@@ -18,8 +18,58 @@
                     "Articles"
                 ],
                 "summary": "Get filtered articles",
+                "description": "Returns paginated list of articles filtered by source, author, category, search or date.",
                 "operationId": "11aa4cc6561a7b94c56d1201d62513ee",
                 "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "technology"
+                        }
+                    },
+                    {
+                        "name": "sources",
+                        "in": "query",
+                        "description": "Comma separated list of sources",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "guardian,newsapi"
+                        }
+                    },
+                    {
+                        "name": "authors",
+                        "in": "query",
+                        "description": "Comma separated list of authors",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "John Doe,Jane Smith"
+                        }
+                    },
+                    {
+                        "name": "categories",
+                        "in": "query",
+                        "description": "Comma separated list of categories",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "technology,business"
+                        }
+                    },
+                    {
+                        "name": "date",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-02-20"
+                        }
+                    },
                     {
                         "name": "per_page",
                         "in": "query",
@@ -32,7 +82,73 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of articles"
+                        "description": "Paginated list of articles",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "current_page": {
+                                            "type": "integer",
+                                            "example": 1
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "title": {
+                                                        "type": "string",
+                                                        "example": "Breaking News"
+                                                    },
+                                                    "description": {
+                                                        "type": "string"
+                                                    },
+                                                    "author": {
+                                                        "type": "string",
+                                                        "example": "John Doe"
+                                                    },
+                                                    "source": {
+                                                        "type": "string",
+                                                        "example": "guardian"
+                                                    },
+                                                    "category": {
+                                                        "type": "string",
+                                                        "example": "technology"
+                                                    },
+                                                    "url": {
+                                                        "type": "string"
+                                                    },
+                                                    "image_url": {
+                                                        "type": "string"
+                                                    },
+                                                    "published_at": {
+                                                        "type": "string",
+                                                        "format": "date-time"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "total": {
+                                            "type": "integer",
+                                            "example": 120
+                                        },
+                                        "per_page": {
+                                            "type": "integer",
+                                            "example": 10
+                                        },
+                                        "last_page": {
+                                            "type": "integer",
+                                            "example": 12
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -43,10 +159,52 @@
                     "Articles"
                 ],
                 "summary": "Get article filter metadata",
+                "description": "Returns available sources, authors and categories for filter dropdowns.",
                 "operationId": "96792a521ef881cf96c2680211aa9a0f",
                 "responses": {
                     "200": {
-                        "description": "Filter metadata"
+                        "description": "Filter metadata",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "sources": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            },
+                                            "example": [
+                                                "guardian",
+                                                "newsapi",
+                                                "gnews"
+                                            ]
+                                        },
+                                        "authors": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            },
+                                            "example": [
+                                                "John Doe",
+                                                "Jane Smith"
+                                            ]
+                                        },
+                                        "categories": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            },
+                                            "example": [
+                                                "technology",
+                                                "business",
+                                                "sports"
+                                            ]
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -57,11 +215,47 @@
                     "Preferences"
                 ],
                 "summary": "Get user preferences",
-                "description": "Returns saved preferences for the authenticated user.",
                 "operationId": "110d923e543e89f784b93e143ae4825a",
                 "responses": {
                     "200": {
-                        "description": "Preference retrieved successfully"
+                        "description": "Preference retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "user_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "sources": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "categories": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "authors": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object",
+                                            "nullable": true
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "401": {
                         "description": "User not resolved"
@@ -73,7 +267,6 @@
                     "Preferences"
                 ],
                 "summary": "Store user preferences",
-                "description": "Saves or updates user news preferences (sources, categories, authors).",
                 "operationId": "e524a1863fe3fc97946c79487476ad18",
                 "requestBody": {
                     "required": true,
@@ -118,7 +311,50 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Preferences saved successfully"
+                        "description": "Preferences saved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Preference saved successfully"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "user_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "sources": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "categories": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "authors": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
                     },
                     "401": {
                         "description": "User not resolved"
@@ -130,11 +366,23 @@
                     "Preferences"
                 ],
                 "summary": "Clear user preferences",
-                "description": "Removes all saved preferences for the authenticated user.",
                 "operationId": "9076b84ae7f6047e4f4698e5ef385e10",
                 "responses": {
                     "200": {
-                        "description": "Preferences cleared successfully"
+                        "description": "Preferences cleared successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Preference cleared successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "401": {
                         "description": "User not resolved"
