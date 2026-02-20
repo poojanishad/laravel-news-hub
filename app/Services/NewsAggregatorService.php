@@ -7,44 +7,36 @@ use App\Services\NewsProviders\NewsProviderFactory;
 
 class NewsAggregatorService
 {
-    protected $factory;
-
-    protected $providers = [
-        'newsapi',
+    protected array $providers = [
         'gnews',
+        'newsapi',
         'newsdata',
         'guardian',
     ];
 
-    public function __construct(NewsProviderFactory $factory)
-    {
-        $this->factory = $factory;
-    }
+    public function __construct(
+        protected NewsProviderFactory $factory
+    ) {}
 
     public function fetchFromAll(): void
     {
-        foreach ($this->providers as $providerName) {
-            $this->fetchAndStore($providerName);
+        foreach ($this->providers as $provider) {
+            $this->fetchFromSingle($provider);
         }
     }
 
-    public function fetchFromSingle(string $providerName): void
+    public function fetchFromSingle(string $provider): void
     {
-        $this->fetchAndStore($providerName);
+        $providerInstance = $this->factory->make($provider);
+
+        $articles = $providerInstance->fetch();
+
+        $this->store($articles);
     }
 
-    protected function fetchAndStore(string $providerName): void
+    protected function store(array $articles): void
     {
-        $provider = $this->factory->make($providerName);
-
-        $articles = $provider->fetch();
-
-        if (!is_array($articles)) {
-            throw new \Exception("Provider {$providerName} did not return valid array.");
-        }
-
         foreach ($articles as $article) {
-
             if (!isset($article['url'])) {
                 continue;
             }
@@ -55,20 +47,4 @@ class NewsAggregatorService
             );
         }
     }
-
-    public function paginate($query, $perPage = 10)
-    {
-        $paginator = $query->latest()->paginate($perPage);
-
-        return [
-            'data' => $paginator->items(),
-            'meta' => [
-                'current_page' => $paginator->currentPage(),
-                'last_page' => $paginator->lastPage(),
-                'per_page' => $paginator->perPage(),
-                'total' => $paginator->total(),
-            ]
-        ];
-    }
-
 }

@@ -6,12 +6,51 @@ use App\Models\UserPreference;
 use App\Services\PreferenceService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use OpenApi\Attributes as OA;
 
 class UserPreferenceController extends Controller
 {
-    /**
-     * Store or Update Preference
-     */
+    #[OA\Post(
+        path: "/api/preferences",
+        summary: "Store user preferences",
+        description: "Saves or updates user news preferences (sources, categories, authors).",
+        tags: ["Preferences"],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(
+                        property: "sources",
+                        type: "array",
+                        items: new OA\Items(type: "string"),
+                        example: ["guardian", "newsapi"]
+                    ),
+                    new OA\Property(
+                        property: "categories",
+                        type: "array",
+                        items: new OA\Items(type: "string"),
+                        example: ["technology", "business"]
+                    ),
+                    new OA\Property(
+                        property: "authors",
+                        type: "array",
+                        items: new OA\Items(type: "string"),
+                        example: ["John Doe"]
+                    ),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Preferences saved successfully"
+            ),
+            new OA\Response(
+                response: 401,
+                description: "User not resolved"
+            )
+        ]
+    )]
     public function store(Request $request, PreferenceService $service): JsonResponse
     {
         $user = $request->attributes->get('resolved_user');
@@ -40,9 +79,22 @@ class UserPreferenceController extends Controller
         ]);
     }
 
-    /**
-     * Clear Preference
-     */
+    #[OA\Delete(
+        path: "/api/preferences",
+        summary: "Clear user preferences",
+        description: "Removes all saved preferences for the authenticated user.",
+        tags: ["Preferences"],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Preferences cleared successfully"
+            ),
+            new OA\Response(
+                response: 401,
+                description: "User not resolved"
+            )
+        ]
+    )]
     public function destroy(Request $request, PreferenceService $service): JsonResponse
     {
         $user = $request->attributes->get('resolved_user');
@@ -60,9 +112,22 @@ class UserPreferenceController extends Controller
         ]);
     }
 
-    /**
-     * Show Preference
-     */
+    #[OA\Get(
+        path: "/api/preferences",
+        summary: "Get user preferences",
+        description: "Returns saved preferences for the authenticated user.",
+        tags: ["Preferences"],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: "Preference retrieved successfully"
+            ),
+            new OA\Response(
+                response: 401,
+                description: "User not resolved"
+            )
+        ]
+    )]
     public function show(Request $request): JsonResponse
     {
         $user = $request->attributes->get('resolved_user');

@@ -4,25 +4,21 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Services\NewsAggregatorService;
-use App\Services\NewsProviders\NewsProviderFactory;
 
 class FetchArticlesCommand extends Command
 {
     protected $signature = 'news:fetch {--provider=all}';
     protected $description = 'Fetch news articles from APIs';
 
-    public function handle(NewsProviderFactory $factory): int
+    public function handle(NewsAggregatorService $service): int
     {
         try {
+            $provider = $this->option('provider');
 
-            $providerOption = $this->option('provider');
-
-            $service = new NewsAggregatorService($factory);
-
-            if ($providerOption === 'all') {
+            if ($provider === 'all') {
                 $service->fetchFromAll();
             } else {
-                $service->fetchFromSingle($providerOption);
+                $service->fetchFromSingle($provider);
             }
 
             $this->info('Articles fetched successfully');
@@ -32,6 +28,7 @@ class FetchArticlesCommand extends Command
         } catch (\Throwable $e) {
 
             $this->error($e->getMessage());
+
             return self::FAILURE;
         }
     }
