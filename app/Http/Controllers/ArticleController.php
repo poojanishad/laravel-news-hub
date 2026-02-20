@@ -101,10 +101,12 @@ class ArticleController extends Controller
 
         $query = $filterService->apply($query, $request, $user);
 
-        $perPage = $request->get('per_page', 10);
+        $perPage = (int) $request->get('per_page', 10);
 
         return response()->json(
-            $query->latest('published_at')->paginate($perPage)
+            $query
+                ->orderByDesc('published_at')
+                ->paginate($perPage)
         );
     }
 
